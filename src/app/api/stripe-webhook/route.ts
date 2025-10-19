@@ -7,10 +7,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role key (NOT anon)
-);
+export function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error("Supabase credentials missing");
+  }
+
+  return createClient(url, key);
+}
+
 
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature")!;
