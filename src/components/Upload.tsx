@@ -105,7 +105,7 @@ export default function Upload() {
     fd.append("fill_value", options.placeholder || "Unknown");
 
     try {
-      const res = await fetch("https://sheetsense-backend.onrender.com", { method: "POST", body: fd });
+      const res = await fetch("https://sheetsense-backend.onrender.com/clean", { method: "POST", body: fd });
 
       if (!res.ok) {
         const errText = await res.text();
