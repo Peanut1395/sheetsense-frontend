@@ -1,9 +1,9 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2025-09-30.clover" as any, // ✅ match the installed SDK version
 });
+
 
 export async function GET(req: Request) {
   try {
