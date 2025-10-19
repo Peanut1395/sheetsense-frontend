@@ -3,11 +3,11 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-09-30.clover" as any,
+  apiVersion: "2024-06-20",
 });
 
-
-export function getSupabase() {
+// Lazy init Supabase
+function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -19,52 +19,42 @@ export function getSupabase() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.text();
   const sig = req.headers.get("stripe-signature");
-
-
-export async function POST(req: Request) {
-  const sig = req.headers.get("stripe-signature")!;
   const body = await req.text();
+
+  let event;
 
   try {
-    const event = stripe.webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       body,
-      sig,
+      sig!,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-
-    // 🔹 When checkout completes
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as any;
-      const email = session.customer_details?.email;
-      const priceId = session.metadata?.price_id || session.subscription?.price?.id;
-
-      console.log("✅ Stripe session completed for", email, priceId);
-
-      if (email) {
-        let plan = "free";
-        if (priceId === "price_1SHi6lBMisi9mPSqj5vNdzNM") plan = "pro";
-        if (priceId === "price_1SHi6yBMisi9mPSqxbPDIUK4") plan = "business";
-
-        const supabase = getSupabase(); 
-
-        const { error } = await supabase
-          .from("users")
-          .update({ plan })
-          .eq("email", email);
-
-        if (error) {
-          console.error("Supabase update error:", error);
-        }
-
-        return new Response("Webhook received", { status: 200 });
-}
-    }
-
-    return NextResponse.json({ received: true });
   } catch (err: any) {
-    console.error("❌ Webhook Error:", err.message);
-    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+    console.error("Webhook signature verification failed:", err.message);
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
+
+  const supabase = getSupabase();
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as any;
+    const email = session.customer_details?.email;
+    const priceId = session.metadata?.price_id;
+
+    let plan = "free";
+    if (priceId === "price_1SHhpkBMisi9mPSq0U1XvD7b") plan = "pro";
+    if (priceId === "price_1SHi6yBMisi9mPSqxbPDIUK4") plan = "business";
+
+    const { error } = await supabase
+      .from("users")
+      .update({ plan })
+      .eq("email", email);
+
+    if (error) {
+      console.error("Supabase update error:", error);
+    }
+  }
+
+  return NextResponse.json({ received: true }, { status: 200 });
 }
