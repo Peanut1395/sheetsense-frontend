@@ -18,6 +18,10 @@ export function getSupabase() {
   return createClient(url, key);
 }
 
+export async function POST(req: Request) {
+  const body = await req.text();
+  const sig = req.headers.get("stripe-signature");
+
 
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature")!;
@@ -43,14 +47,19 @@ export async function POST(req: Request) {
         if (priceId === "price_1SHi6lBMisi9mPSqj5vNdzNM") plan = "pro";
         if (priceId === "price_1SHi6yBMisi9mPSqxbPDIUK4") plan = "business";
 
+        const supabase = getSupabase(); 
+
         const { error } = await supabase
           .from("users")
           .update({ plan })
           .eq("email", email);
 
-        if (error) console.error("Supabase update error:", error);
-        else console.log(`🔹 Updated ${email} to plan: ${plan}`);
-      }
+        if (error) {
+          console.error("Supabase update error:", error);
+        }
+
+        return new Response("Webhook received", { status: 200 });
+}
     }
 
     return NextResponse.json({ received: true });
