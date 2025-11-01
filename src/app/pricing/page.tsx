@@ -46,6 +46,14 @@ export default function PricingPage() {
     fetchPlan();
   }, []);
 
+  const handleUpgrade = (link: string) => {
+    if (!link) {
+      toast.error("Checkout link not configured");
+      return;
+    }
+    window.location.href = link;
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center mt-20 text-gray-300">
@@ -59,7 +67,7 @@ export default function PricingPage() {
       <Toaster position="top-right" />
       <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
       <p className="text-gray-400 mb-12 text-center max-w-2xl">
-        Unlock higher limits and team access by upgrading your plan.
+        Upgrade for higher limits, better tools, and team support.
         Cancel anytime — your data stays secure.
       </p>
 
@@ -78,7 +86,7 @@ export default function PricingPage() {
         </span>
       </p>
 
-      {/* ✨ Dynamic Glow Animations */}
+      {/* Glow animations */}
       <style jsx>{`
         @keyframes glow-blue {
           0%, 100% {
@@ -129,11 +137,11 @@ export default function PricingPage() {
           <h2 className="text-2xl font-bold mb-1">Free</h2>
           <p className="text-3xl font-bold mb-1">$0</p>
           <p className="text-gray-400 mb-6 text-center">
-            Get started with all essential features.
+            Get started with essential cleaning features.
           </p>
           <ul className="text-left space-y-2 text-sm mb-8">
-            <li>✅ Up to 5 cleanings / month</li>
-            <li>✅ All core cleaning tools included</li>
+            <li>✅ Up to 5 cleanings per month</li>
+            <li>✅ All core tools included</li>
             <li>✅ Email-only support</li>
           </ul>
           <button
@@ -157,17 +165,17 @@ export default function PricingPage() {
           <h2 className="text-2xl font-bold mb-1">Pro</h2>
           <p className="text-3xl font-bold mb-1">$29 / month</p>
           <p className="text-gray-400 mb-6 text-center">
-            Perfect for freelancers and small teams.
+            Ideal for freelancers and small teams who clean data regularly.
           </p>
           <ul className="text-left space-y-2 text-sm mb-8">
-            <li>✅ Up to 50 cleanings / month</li>
-            <li>✅ All core cleaning tools included</li>
-            <li>✅ Email support</li>
+            <li>✅ Up to 50 cleanings per month</li>
+            <li>✅ All advanced tools included</li>
+            <li>✅ Priority email support</li>
           </ul>
           <button
             disabled={plan === "pro"}
             onClick={() =>
-              (window.location.href = "https://buy.stripe.com/test_aFaaEW9jJef09hUbdwafS00")
+              handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_LINK_PRO!)
             }
             className={`w-full py-3 rounded-lg font-medium ${
               plan === "pro"
@@ -188,17 +196,17 @@ export default function PricingPage() {
           <h2 className="text-2xl font-bold mb-1">Business</h2>
           <p className="text-3xl font-bold mb-1">$249 / month</p>
           <p className="text-gray-400 mb-6 text-center">
-            Unlimited power for teams and organizations.
+            For agencies and organizations needing unlimited cleaning and collaboration.
           </p>
           <ul className="text-left space-y-2 text-sm mb-8">
             <li>✅ Unlimited cleanings</li>
             <li>✅ Up to 10 team accounts</li>
-            <li>✅ Email support</li>
+            <li>✅ Priority support</li>
           </ul>
           <button
             disabled={plan === "business"}
             onClick={() =>
-              (window.location.href = "https://buy.stripe.com/test_business_link")
+              handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_LINK_BUSINESS!)
             }
             className={`w-full py-3 rounded-lg font-medium ${
               plan === "business"
@@ -212,7 +220,7 @@ export default function PricingPage() {
       </div>
 
       <p className="text-gray-500 text-sm mt-10">
-        All payments securely processed by{" "}
+        All payments are securely processed by{" "}
         <span className="text-blue-400 font-semibold">Stripe</span>.
       </p>
     </div>

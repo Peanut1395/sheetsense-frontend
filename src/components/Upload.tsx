@@ -16,10 +16,9 @@ export default function Upload() {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [outputFormat, setOutputFormat] = useState("same");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFilename, setDownloadFilename] = useState<string | null>(null);
-  const [limitReached, setLimitReached] = useState(false); // ✅ NEW
+  const [limitReached, setLimitReached] = useState(false);
 
   const [options, setOptions] = useState({
     removeDuplicates: false,
@@ -90,8 +89,6 @@ export default function Upload() {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("user_id", user.id);
-    fd.append("output_format", outputFormat);
-
     fd.append("remove_duplicates", String(options.removeDuplicates));
     fd.append("trim_spaces", String(options.trimSpaces));
     fd.append("clean_headers", String(options.cleanHeaders));
@@ -105,7 +102,10 @@ export default function Upload() {
     fd.append("fill_value", options.placeholder || "Unknown");
 
     try {
-      const res = await fetch("https://sheetsense-backend.onrender.com/clean", { method: "POST", body: fd });
+      const res = await fetch("https://sheetsense-backend.onrender.com/clean", {
+        method: "POST",
+        body: fd,
+      });
 
       if (!res.ok) {
         const errText = await res.text();
@@ -118,7 +118,6 @@ export default function Upload() {
           errorMessage = errText;
         }
 
-        // ✅ Handle usage limit from backend
         if (errorMessage.includes("Usage limit reached")) {
           setLimitReached(true);
           setMessage("⚠️ You’ve reached your free limit (5 files). Please upgrade to continue.");
@@ -141,7 +140,7 @@ export default function Upload() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
-      // Extract filename
+      // Extract filename from headers
       const cd = res.headers.get("Content-Disposition");
       let filename = `cleaned_${file.name}`;
       if (cd) {
@@ -152,7 +151,7 @@ export default function Upload() {
       setDownloadUrl(url);
       setDownloadFilename(filename);
       toast.success("✅ File cleaned successfully. Click 'Download File' to save it.");
-      setMessage(null); // ✅ clear "Processing file..."
+      setMessage(null);
     } catch (err: any) {
       console.error(err);
       if (err.message && err.message.includes("Usage limit reached")) {
@@ -188,7 +187,10 @@ export default function Upload() {
       {/* Upload box */}
       <div
         onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
         onDragLeave={() => setDragActive(false)}
         onDrop={(e) => {
           e.preventDefault();
@@ -196,14 +198,21 @@ export default function Upload() {
           if (e.dataTransfer.files?.[0]) handleFileSelect(e.dataTransfer.files[0]);
         }}
         className={`w-full p-10 border-2 border-dashed rounded-2xl cursor-pointer text-center transition ${
-          dragActive ? "border-blue-400 bg-blue-900/30" : "border-gray-600 hover:border-blue-400"
+          dragActive
+            ? "border-blue-400 bg-blue-900/30"
+            : "border-gray-600 hover:border-blue-400"
         }`}
       >
         <p className="text-lg">
           {file ? (
-            <>📂 <strong>Selected:</strong> {file.name}</>
+            <>
+              📂 <strong>Selected:</strong> {file.name}
+            </>
           ) : (
-            <>⬆️ Drag & Drop a file here, or <span className="text-blue-400 underline">click to upload</span></>
+            <>
+              ⬆️ Drag & Drop a file here, or{" "}
+              <span className="text-blue-400 underline">click to upload</span>
+            </>
           )}
         </p>
         <input
@@ -211,11 +220,13 @@ export default function Upload() {
           type="file"
           accept=".csv,.xls,.xlsx"
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+          onChange={(e) =>
+            e.target.files?.[0] && handleFileSelect(e.target.files[0])
+          }
         />
       </div>
 
-      {/* Cleaning + Formatting options */}
+      {/* Cleaning Options Grid */}
       {file && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -287,11 +298,15 @@ export default function Upload() {
 
                 {options.fillBlanks && (
                   <div className="ml-10 mt-2">
-                    <label className="block text-sm text-gray-300 mb-1">Placeholder text</label>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Placeholder text
+                    </label>
                     <input
                       type="text"
                       value={options.placeholder}
-                      onChange={(e) => setOptions({ ...options, placeholder: e.target.value })}
+                      onChange={(e) =>
+                        setOptions({ ...options, placeholder: e.target.value })
+                      }
                       className="p-2 rounded bg-gray-700 border border-gray-600 text-white w-full"
                       placeholder="Unknown"
                     />
@@ -309,24 +324,11 @@ export default function Upload() {
             >
               Select All Cleaning Options
             </button>
-
-            <div className="mt-2">
-              <label className="font-semibold mr-2">Output Format:</label>
-              <select
-                value={outputFormat}
-                onChange={(e) => setOutputFormat(e.target.value)}
-                className="p-2 rounded bg-gray-800 border border-gray-600 text-white"
-              >
-                <option value="same">Same as uploaded</option>
-                <option value="csv">CSV</option>
-                <option value="xlsx">Excel (XLSX)</option>
-              </select>
-            </div>
           </div>
         </>
       )}
 
-      {/* Start / Upgrade / Download buttons */}
+      {/* Start / Download / Upgrade */}
       {file && (
         <div className="flex flex-col md:flex-row gap-4 items-center">
           {limitReached ? (
@@ -357,6 +359,7 @@ export default function Upload() {
         </div>
       )}
 
+      {/* Progress Bar + Message */}
       {loading && (
         <div className="w-full bg-gray-700 rounded-full h-3 mt-4 overflow-hidden">
           <div
