@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 
 const supabase = createClient(
@@ -16,10 +17,10 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Redirect logged-in users straight to dashboard
+  // Redirect logged-in users to homepage (upload page)
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.push("/dashboard");
+      if (user) router.push("/");
     });
   }, [router]);
 
@@ -31,32 +32,24 @@ export default function SignUpPage() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
-        options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-        },
       });
 
-      // Handle specific Supabase cases
       if (error) {
         const msg = error.message.toLowerCase();
-
         if (
-          msg.includes("user already registered") ||
-          msg.includes("already exists") ||
-          (msg.includes("email") && msg.includes("exists"))
+          msg.includes("already registered") ||
+          msg.includes("exists")
         ) {
-          toast.error("⚠️ This email already has an account. Redirecting to login...");
+          toast.error("⚠️ Account already exists. Redirecting to login...");
           setTimeout(() => router.push("/login"), 2000);
           return;
         }
-
-        toast.error(error.message || "Sign-up failed. Try again later.");
+        toast.error(error.message);
         return;
       }
 
       if (!data?.user) {
-        toast.error("⚠️ This email already has an account. Redirecting to login...");
+        toast.error("⚠️ Account already exists. Redirecting to login...");
         setTimeout(() => router.push("/login"), 2000);
         return;
       }
@@ -64,9 +57,9 @@ export default function SignUpPage() {
       toast.success("✅ Verification email sent! Please check your inbox.");
       setEmail("");
       setPassword("");
-      setTimeout(() => router.push("/login"), 5000);
+      setTimeout(() => router.push("/login"), 4000);
     } catch (err: any) {
-      console.error("Signup error:", err);
+      console.error(err);
       toast.error("Unexpected error occurred. Try again later.");
     } finally {
       setLoading(false);
@@ -74,42 +67,21 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0b0d12] text-white px-6 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-[#0b0d12] text-white px-6 relative overflow-hidden">
       <Toaster position="top-right" />
-
-      {/* Glowing background */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 to-transparent blur-3xl pointer-events-none"></div>
 
-      <style jsx>{`
-        @keyframes glow-blue {
-          0%, 100% {
-            box-shadow: 0 0 8px rgba(59,130,246,0.3),
-                        0 0 16px rgba(59,130,246,0.4),
-                        0 0 24px rgba(59,130,246,0.2);
-          }
-          50% {
-            box-shadow: 0 0 12px rgba(59,130,246,0.6),
-                        0 0 28px rgba(59,130,246,0.8),
-                        0 0 40px rgba(59,130,246,0.4);
-          }
-        }
-        .glow-blue {
-          animation: glow-blue 3s ease-in-out infinite;
-          border-color: #3b82f6;
-        }
-      `}</style>
+      <Link href="/" className="absolute top-6 left-6 text-gray-400 hover:text-white transition">
+        ← Back to Home
+      </Link>
 
-      {/* Signup form */}
       <form
         onSubmit={handleSignup}
-        className="glow-blue bg-[#131720] border rounded-2xl p-8 shadow-2xl w-full max-w-md text-center"
+        className="bg-[#131720] border border-gray-800 rounded-2xl p-8 shadow-2xl w-full max-w-md text-center"
       >
-        <h1 className="text-4xl font-bold mb-6 text-white tracking-tight">
-          Create Your Account
-        </h1>
-        <p className="text-gray-400 mb-8 text-sm">
-          Join <span className="text-blue-400 font-semibold">SheetSense</span> and
-          start cleaning your data effortlessly.
+        <h1 className="text-3xl font-bold mb-4">Create Your Account</h1>
+        <p className="text-gray-400 mb-6 text-sm">
+          Join <span className="text-blue-400 font-semibold">SheetSense</span> to start cleaning your data effortlessly.
         </p>
 
         <input
@@ -136,7 +108,7 @@ export default function SignUpPage() {
           className={`w-full py-3 rounded-lg font-semibold transition-all ${
             loading
               ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-blue-500/40"
+              : "bg-green-600 hover:bg-green-500 text-white shadow-lg hover:shadow-green-500/40"
           }`}
         >
           {loading ? "Creating Account..." : "Sign Up"}
@@ -144,12 +116,9 @@ export default function SignUpPage() {
 
         <p className="mt-6 text-sm text-gray-400">
           Already have an account?{" "}
-          <a
-            href="/login"
-            className="text-blue-400 hover:text-blue-300 font-medium transition"
-          >
+          <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium transition">
             Log in
-          </a>
+          </Link>
         </p>
       </form>
     </div>

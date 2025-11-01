@@ -41,14 +41,11 @@ export default function Upload() {
     placeholder: "Unknown",
   });
 
-  // 🔹 Auth check + fetch user usage
+  // 🔹 Fetch user usage & plan info
   async function fetchUserUsage() {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        router.push("/login");
-        return;
-      }
+      if (error || !user) return;
 
       const { data, error: dbError } = await supabase
         .from("users")
@@ -107,6 +104,7 @@ export default function Upload() {
   async function start() {
     if (!file) return toast.error("Please upload a file first.");
 
+    // 🔹 Check if user is logged in — redirect to /login if not
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
       router.push("/login");
@@ -166,7 +164,7 @@ export default function Upload() {
         }
       }
 
-      // 🔹 Read usage headers returned from backend
+      // ✅ Read usage headers
       const newPlan = res.headers.get("X-Usage-Plan") || plan;
       const newUsage = res.headers.get("X-Usage-Count");
       const newLimit = res.headers.get("X-Usage-Limit");
@@ -175,7 +173,6 @@ export default function Upload() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
-      // Extract filename from headers
       const cd = res.headers.get("Content-Disposition");
       let filename = `cleaned_${file.name}`;
       if (cd) {
@@ -186,10 +183,9 @@ export default function Upload() {
       setDownloadUrl(url);
       setDownloadFilename(filename);
 
-      // 🔁 Refresh usage info from Supabase for live accuracy
+      // Refresh usage info
       await fetchUserUsage();
 
-      // ✅ Success toast with safe fallback if headers missing
       const safeUsage =
         newUsage && newLimit
           ? `Usage: ${newUsage}/${newLimit} (${newPlan})`
@@ -269,7 +265,7 @@ export default function Upload() {
         </div>
       )}
 
-      {/* Upload box */}
+      {/* Upload Box */}
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
@@ -311,93 +307,89 @@ export default function Upload() {
         />
       </div>
 
-      {/* Cleaning Options Grid */}
+      {/* Cleaning Options */}
       {file && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             {/* Data Cleanup */}
             <div className="p-5 rounded-xl bg-gray-800/70 border border-gray-700 space-y-3">
               <h3 className="font-semibold text-lg mb-2">🧹 Data Cleanup</h3>
-              <div className="flex flex-col gap-2">
-                {[
-                  ["removeDuplicates", "Remove Duplicates", "Deletes repeated rows so each record is unique."],
-                  ["trimSpaces", "Trim Spaces", "Removes extra spaces from text fields."],
-                  ["cleanHeaders", "Clean Headers", "Standardizes column names (lowercase, underscores)."],
-                  ["dropEmptyColumns", "Drop Empty Columns", "Removes columns that contain no data."],
-                ].map(([key, label, desc]) => (
-                  <label key={key} className="inline-flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={(options as any)[key]}
-                      onChange={() => toggle(key as keyof typeof options)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="font-medium">{label}</div>
-                      <div className="text-sm text-gray-400">{desc}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
+              {[
+                ["removeDuplicates", "Remove Duplicates", "Deletes repeated rows so each record is unique."],
+                ["trimSpaces", "Trim Spaces", "Removes extra spaces from text fields."],
+                ["cleanHeaders", "Clean Headers", "Standardizes column names (lowercase, underscores)."],
+                ["dropEmptyColumns", "Drop Empty Columns", "Removes columns that contain no data."],
+              ].map(([key, label, desc]) => (
+                <label key={key} className="inline-flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={(options as any)[key]}
+                    onChange={() => toggle(key as keyof typeof options)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium">{label}</div>
+                    <div className="text-sm text-gray-400">{desc}</div>
+                  </div>
+                </label>
+              ))}
             </div>
 
             {/* Formatting */}
             <div className="p-5 rounded-xl bg-gray-800/70 border border-gray-700 space-y-3">
               <h3 className="font-semibold text-lg mb-2">✨ Formatting</h3>
-              <div className="flex flex-col gap-2">
-                {[
-                  ["normaliseDates", "Normalize Dates", "Converts dates to DD-MM-YYYY format."],
-                  ["fixEmails", "Fix Emails", "Cleans emails and replaces invalid ones."],
-                  ["titlecaseNames", "Titlecase Names/Cities", "Capitalizes names and city names."],
-                  ["sentencecaseComments", "Sentencecase Comments", "Makes comments start with a capital letter."],
-                  ["highlightEmpty", "Highlight Empty Cells", "Yellow in Excel, '__EMPTY__' markers in CSV."],
-                ].map(([key, label, desc]) => (
-                  <label key={key} className="inline-flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={(options as any)[key]}
-                      onChange={() => toggle(key as keyof typeof options)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="font-medium">{label}</div>
-                      <div className="text-sm text-gray-400">{desc}</div>
-                    </div>
-                  </label>
-                ))}
-
-                <label className="inline-flex items-start gap-3">
+              {[
+                ["normaliseDates", "Normalize Dates", "Converts dates to DD-MM-YYYY format."],
+                ["fixEmails", "Fix Emails", "Cleans emails and replaces invalid ones."],
+                ["titlecaseNames", "Titlecase Names/Cities", "Capitalizes names and city names."],
+                ["sentencecaseComments", "Sentencecase Comments", "Makes comments start with a capital letter."],
+                ["highlightEmpty", "Highlight Empty Cells", "Yellow in Excel, '__EMPTY__' markers in CSV."],
+              ].map(([key, label, desc]) => (
+                <label key={key} className="inline-flex items-start gap-3">
                   <input
                     type="checkbox"
-                    checked={options.fillBlanks}
-                    onChange={() => toggle("fillBlanks")}
+                    checked={(options as any)[key]}
+                    onChange={() => toggle(key as keyof typeof options)}
                     className="mt-1"
                   />
                   <div>
-                    <div className="font-medium">Fill Empty Cells</div>
-                    <div className="text-sm text-gray-400">
-                      Replace empty cells with your chosen placeholder.
-                    </div>
+                    <div className="font-medium">{label}</div>
+                    <div className="text-sm text-gray-400">{desc}</div>
                   </div>
                 </label>
+              ))}
 
-                {options.fillBlanks && (
-                  <div className="ml-10 mt-2">
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Placeholder text
-                    </label>
-                    <input
-                      type="text"
-                      value={options.placeholder}
-                      onChange={(e) =>
-                        setOptions({ ...options, placeholder: e.target.value })
-                      }
-                      className="p-2 rounded bg-gray-700 border border-gray-600 text-white w-full"
-                      placeholder="Unknown"
-                    />
+              <label className="inline-flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={options.fillBlanks}
+                  onChange={() => toggle("fillBlanks")}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium">Fill Empty Cells</div>
+                  <div className="text-sm text-gray-400">
+                    Replace empty cells with your chosen placeholder.
                   </div>
-                )}
-              </div>
+                </div>
+              </label>
+
+              {options.fillBlanks && (
+                <div className="ml-10 mt-2">
+                  <label className="block text-sm text-gray-300 mb-1">
+                    Placeholder text
+                  </label>
+                  <input
+                    type="text"
+                    value={options.placeholder}
+                    onChange={(e) =>
+                      setOptions({ ...options, placeholder: e.target.value })
+                    }
+                    className="p-2 rounded bg-gray-700 border border-gray-600 text-white w-full"
+                    placeholder="Unknown"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -418,7 +410,7 @@ export default function Upload() {
         <div className="flex flex-col md:flex-row gap-4 items-center">
           {limitReached ? (
             <button
-              onClick={() => (window.location.href = "/pricing")}
+              onClick={() => router.push("/pricing")}
               className="rounded-xl px-8 py-3 font-semibold bg-yellow-500 text-black shadow hover:bg-yellow-400 transition"
             >
               ⚡ Upgrade Plan
