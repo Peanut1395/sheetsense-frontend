@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -20,6 +20,11 @@ export default function Upload() {
   const [downloadFilename, setDownloadFilename] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
 
+  // 🧭 Usage + plan state
+  const [plan, setPlan] = useState<string>("free");
+  const [usageCount, setUsageCount] = useState<number>(0);
+  const [limit, setLimit] = useState<number | null>(null);
+
   const [options, setOptions] = useState({
     removeDuplicates: false,
     trimSpaces: false,
@@ -33,6 +38,32 @@ export default function Upload() {
     highlightEmpty: false,
     placeholder: "Unknown",
   });
+
+  // 🔹 Fetch plan + usage count
+  async function fetchUserUsage() {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return;
+
+      const { data, error: dbError } = await supabase
+        .from("users")
+        .select("plan, usage_count")
+        .eq("id", user.id)
+        .single();
+
+      if (!dbError && data) {
+        setPlan(data.plan || "free");
+        setUsageCount(data.usage_count || 0);
+        setLimit(data.plan === "free" ? 5 : data.plan === "pro" ? 50 : null);
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch usage info:", err);
+    }
+  }
+
+  useEffect(() => {
+    fetchUserUsage();
+  }, []);
 
   function handleFileSelect(f: File) {
     const ok = /\.(csv|xls|xlsx)$/i.test(f.name);
@@ -71,7 +102,6 @@ export default function Upload() {
   async function start() {
     if (!file) return toast.error("Please upload a file first.");
 
-    // 🔑 Ensure logged-in user
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
       toast.error("You must be logged in to clean files.");
@@ -120,7 +150,7 @@ export default function Upload() {
 
         if (errorMessage.includes("Usage limit reached")) {
           setLimitReached(true);
-          setMessage("⚠️ You’ve reached your free limit (5 files). Please upgrade to continue.");
+          setMessage("⚠️ You’ve reached your free limit. Please upgrade to continue.");
           setLoading(false);
           setProgress(0);
           toast.error("🚫 Usage limit reached — please upgrade your plan.");
@@ -131,16 +161,15 @@ export default function Upload() {
         }
       }
 
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        const err = await res.json();
-        throw new Error(err.error || "Something went wrong");
-      }
+      // 🔹 Read usage headers returned from backend
+      const newPlan = res.headers.get("X-Usage-Plan") || plan;
+      const newUsage = res.headers.get("X-Usage-Count");
+      const newLimit = res.headers.get("X-Usage-Limit");
 
+      // Convert file blob
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
-      // Extract filename from headers
       const cd = res.headers.get("Content-Disposition");
       let filename = `cleaned_${file.name}`;
       if (cd) {
@@ -150,17 +179,26 @@ export default function Upload() {
 
       setDownloadUrl(url);
       setDownloadFilename(filename);
-      toast.success("✅ File cleaned successfully. Click 'Download File' to save it.");
+
+      // 🔁 Refresh usage info from Supabase for live accuracy
+      await fetchUserUsage();
+
+      // ✅ Show clean success toast (with safe fallback)
+      const safeUsage =
+        newUsage && newLimit
+          ? `Usage: ${newUsage}/${newLimit} (${newPlan})`
+          : limit
+          ? `Usage: ${usageCount + 1}/${limit} (${plan})`
+          : `Plan: ${plan.toUpperCase()}`;
+
+      toast.success(`✅ File cleaned successfully! ${safeUsage}`);
       setMessage(null);
     } catch (err: any) {
       console.error(err);
-      if (err.message && err.message.includes("Usage limit reached")) {
+      if (err.message?.includes("Usage limit reached")) {
         setLimitReached(true);
-        setMessage("⚠️ You’ve reached your free limit (5 files). Please upgrade to continue.");
-        setLoading(false);
-        setProgress(0);
+        setMessage("⚠️ You’ve reached your free limit. Please upgrade to continue.");
         toast.error("🚫 Usage limit reached — please upgrade your plan.");
-        return;
       } else {
         toast.error(err.message || "Server error");
       }
@@ -184,7 +222,48 @@ export default function Upload() {
     <div className="mt-8 flex flex-col items-center max-w-4xl w-full mx-auto space-y-8">
       <Toaster position="top-right" reverseOrder={false} />
 
-      {/* Upload box */}
+      {/* 🧭 Usage Info Bar */}
+      {plan && (
+        <div className="w-full max-w-3xl bg-gray-900 border border-gray-700 rounded-xl p-4 text-center">
+          <h3 className="text-lg font-semibold text-white mb-1">
+            Current Plan:{" "}
+            <span
+              className={`${
+                plan === "pro"
+                  ? "text-blue-400"
+                  : plan === "business"
+                  ? "text-yellow-400"
+                  : "text-green-400"
+              }`}
+            >
+              {plan.toUpperCase()}
+            </span>
+          </h3>
+          <p className="text-gray-400 text-sm">
+            {limit
+              ? `You’ve used ${usageCount} of ${limit} cleanings this month.`
+              : "Unlimited cleanings 🎉"}
+          </p>
+          {limit && (
+            <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
+              <div
+                className={`h-2 rounded-full ${
+                  plan === "pro"
+                    ? "bg-blue-500"
+                    : plan === "business"
+                    ? "bg-yellow-400"
+                    : "bg-green-500"
+                }`}
+                style={{
+                  width: `${Math.min((usageCount / limit) * 100, 100)}%`,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upload Box */}
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
@@ -226,7 +305,7 @@ export default function Upload() {
         />
       </div>
 
-      {/* Cleaning Options Grid */}
+      {/* Cleaning Options */}
       {file && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
