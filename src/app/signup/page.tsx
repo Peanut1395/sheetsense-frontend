@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
 const supabase = createClient(
@@ -10,16 +11,23 @@ const supabase = createClient(
 );
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 🔹 Redirect logged-in users straight to dashboard
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.push("/dashboard");
+    });
+  }, [router]);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Step 1️⃣ — Attempt sign-up
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -29,17 +37,17 @@ export default function SignUpPage() {
         },
       });
 
-      // Step 2️⃣ — Handle specific Supabase error cases
+      // Handle specific Supabase cases
       if (error) {
         const msg = error.message.toLowerCase();
 
         if (
           msg.includes("user already registered") ||
           msg.includes("already exists") ||
-          msg.includes("email") && msg.includes("exists")
+          (msg.includes("email") && msg.includes("exists"))
         ) {
           toast.error("⚠️ This email already has an account. Redirecting to login...");
-          setTimeout(() => (window.location.href = "/login"), 2000);
+          setTimeout(() => router.push("/login"), 2000);
           return;
         }
 
@@ -47,18 +55,16 @@ export default function SignUpPage() {
         return;
       }
 
-      // Step 3️⃣ — Handle case when no user returned but no error (Supabase bug)
       if (!data?.user) {
         toast.error("⚠️ This email already has an account. Redirecting to login...");
-        setTimeout(() => (window.location.href = "/login"), 2000);
+        setTimeout(() => router.push("/login"), 2000);
         return;
       }
 
-      // Step 4️⃣ — Normal first-time signup
       toast.success("✅ Verification email sent! Please check your inbox.");
       setEmail("");
       setPassword("");
-      setTimeout(() => (window.location.href = "/login"), 5000);
+      setTimeout(() => router.push("/login"), 5000);
     } catch (err: any) {
       console.error("Signup error:", err);
       toast.error("Unexpected error occurred. Try again later.");
@@ -102,7 +108,8 @@ export default function SignUpPage() {
           Create Your Account
         </h1>
         <p className="text-gray-400 mb-8 text-sm">
-          Join SheetSense and start cleaning your data effortlessly.
+          Join <span className="text-blue-400 font-semibold">SheetSense</span> and
+          start cleaning your data effortlessly.
         </p>
 
         <input

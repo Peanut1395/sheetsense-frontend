@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
 const supabase = createClient(
@@ -10,6 +11,7 @@ const supabase = createClient(
 );
 
 export default function Upload() {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,11 +41,14 @@ export default function Upload() {
     placeholder: "Unknown",
   });
 
-  // 🔹 Fetch plan + usage count
+  // 🔹 Auth check + fetch user usage
   async function fetchUserUsage() {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) return;
+      if (error || !user) {
+        router.push("/login");
+        return;
+      }
 
       const { data, error: dbError } = await supabase
         .from("users")
@@ -104,7 +109,7 @@ export default function Upload() {
 
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-      toast.error("You must be logged in to clean files.");
+      router.push("/login");
       return;
     }
 
@@ -132,10 +137,10 @@ export default function Upload() {
     fd.append("fill_value", options.placeholder || "Unknown");
 
     try {
-      const res = await fetch("https://sheetsense-backend.onrender.com/clean", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://sheetsense-backend.onrender.com"}/clean`,
+        { method: "POST", body: fd }
+      );
 
       if (!res.ok) {
         const errText = await res.text();
@@ -170,6 +175,7 @@ export default function Upload() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
+      // Extract filename from headers
       const cd = res.headers.get("Content-Disposition");
       let filename = `cleaned_${file.name}`;
       if (cd) {
@@ -183,7 +189,7 @@ export default function Upload() {
       // 🔁 Refresh usage info from Supabase for live accuracy
       await fetchUserUsage();
 
-      // ✅ Show clean success toast (with safe fallback)
+      // ✅ Success toast with safe fallback if headers missing
       const safeUsage =
         newUsage && newLimit
           ? `Usage: ${newUsage}/${newLimit} (${newPlan})`
@@ -247,7 +253,7 @@ export default function Upload() {
           {limit && (
             <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
               <div
-                className={`h-2 rounded-full ${
+                className={`h-2 rounded-full transition-all duration-500 ${
                   plan === "pro"
                     ? "bg-blue-500"
                     : plan === "business"
@@ -263,7 +269,7 @@ export default function Upload() {
         </div>
       )}
 
-      {/* Upload Box */}
+      {/* Upload box */}
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
@@ -305,7 +311,7 @@ export default function Upload() {
         />
       </div>
 
-      {/* Cleaning Options */}
+      {/* Cleaning Options Grid */}
       {file && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
