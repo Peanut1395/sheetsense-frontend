@@ -104,10 +104,11 @@ export default function Upload() {
   async function start() {
     if (!file) return toast.error("Please upload a file first.");
 
-    // 🔹 Check if user is logged in — redirect to /login if not
+    // 🔒 If not logged in → show toast then redirect after short delay
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-      router.push("/login");
+      toast.error("🔒 You need an account to clean your file.");
+      setTimeout(() => router.push("/login"), 2500);
       return;
     }
 
@@ -307,7 +308,7 @@ export default function Upload() {
         />
       </div>
 
-      {/* Cleaning Options */}
+      {/* 🧹 Cleaning Options */}
       {file && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -317,7 +318,7 @@ export default function Upload() {
               {[
                 ["removeDuplicates", "Remove Duplicates", "Deletes repeated rows so each record is unique."],
                 ["trimSpaces", "Trim Spaces", "Removes extra spaces from text fields."],
-                ["cleanHeaders", "Clean Headers", "Standardizes column names (lowercase, underscores)."],
+                ["cleanHeaders", "Clean Headers", "Standardizes column names (lowercase_with_underscores)."],
                 ["dropEmptyColumns", "Drop Empty Columns", "Removes columns that contain no data."],
               ].map(([key, label, desc]) => (
                 <label key={key} className="inline-flex items-start gap-3">
@@ -405,7 +406,7 @@ export default function Upload() {
         </>
       )}
 
-      {/* Start / Download / Upgrade */}
+      {/* 🚀 Start / Download / Upgrade */}
       {file && (
         <div className="flex flex-col md:flex-row gap-4 items-center">
           {limitReached ? (
@@ -436,7 +437,7 @@ export default function Upload() {
         </div>
       )}
 
-      {/* Progress Bar + Message */}
+      {/* Progress Bar */}
       {loading && (
         <div className="w-full bg-gray-700 rounded-full h-3 mt-4 overflow-hidden">
           <div

@@ -46,11 +46,21 @@ export default function PricingPage() {
     fetchPlan();
   }, []);
 
-  const handleUpgrade = (link: string) => {
+  // ✅ NEW secure upgrade handler
+  const handleUpgrade = async (link: string) => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      toast.error("🔐 Please log in to upgrade your plan.");
+      setTimeout(() => (window.location.href = "/login"), 2000);
+      return;
+    }
+
     if (!link) {
       toast.error("Checkout link not configured");
       return;
     }
+
     window.location.href = link;
   };
 
