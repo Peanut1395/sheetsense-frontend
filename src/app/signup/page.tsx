@@ -17,7 +17,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect logged-in users to homepage (upload page)
+  // 🚀 If already logged in, go home
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) router.push("/");
@@ -32,32 +32,41 @@ export default function SignUpPage() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
+        options: {
+          emailRedirectTo:
+            process.env.NEXT_PUBLIC_SITE_URL || "https://sheetsense.me",
+        },
       });
 
+      // 🧭 Handle existing account case
       if (error) {
         const msg = error.message.toLowerCase();
         if (
           msg.includes("already registered") ||
+          msg.includes("user already exists") ||
           msg.includes("exists")
         ) {
           toast.error("⚠️ Account already exists. Redirecting to login...");
           setTimeout(() => router.push("/login"), 2000);
           return;
         }
+
         toast.error(error.message);
         return;
       }
 
+      // 🧭 Handle weird Supabase 'user = null' case (duplicate email)
       if (!data?.user) {
         toast.error("⚠️ Account already exists. Redirecting to login...");
         setTimeout(() => router.push("/login"), 2000);
         return;
       }
 
+      // ✅ Normal signup flow
       toast.success("✅ Verification email sent! Please check your inbox.");
       setEmail("");
       setPassword("");
-      setTimeout(() => router.push("/login"), 4000);
+      // no redirect — user stays on signup page
     } catch (err: any) {
       console.error(err);
       toast.error("Unexpected error occurred. Try again later.");
@@ -71,7 +80,10 @@ export default function SignUpPage() {
       <Toaster position="top-right" />
       <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 to-transparent blur-3xl pointer-events-none"></div>
 
-      <Link href="/" className="absolute top-6 left-6 text-gray-400 hover:text-white transition">
+      <Link
+        href="/"
+        className="absolute top-6 left-6 text-gray-400 hover:text-white transition"
+      >
         ← Back to Home
       </Link>
 
@@ -81,7 +93,8 @@ export default function SignUpPage() {
       >
         <h1 className="text-3xl font-bold mb-4">Create Your Account</h1>
         <p className="text-gray-400 mb-6 text-sm">
-          Join <span className="text-blue-400 font-semibold">SheetSense</span> to start cleaning your data effortlessly.
+          Join <span className="text-blue-400 font-semibold">SheetSense</span> to
+          start cleaning your data effortlessly.
         </p>
 
         <input
@@ -116,7 +129,10 @@ export default function SignUpPage() {
 
         <p className="mt-6 text-sm text-gray-400">
           Already have an account?{" "}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium transition">
+          <Link
+            href="/login"
+            className="text-blue-400 hover:text-blue-300 font-medium transition"
+          >
             Log in
           </Link>
         </p>
