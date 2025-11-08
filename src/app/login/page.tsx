@@ -33,17 +33,18 @@ export default function LoginPage() {
       password,
     });
 
-    if (error) {
-      toast.error(error.message);
-    } else if (data?.user) {
-      toast.success("✅ Logged in successfully!");
-      router.push("/");
-    } else {
-      toast.error("Login failed. Please check your credentials.");
-    }
+if (error) {
+  const msg = error.message.toLowerCase();
 
-    setLoading(false);
+  if (msg.includes("invalid login credentials")) {
+    toast.error("❌ Incorrect email or password.");
+  } else if (msg.includes("email not confirmed")) {
+    toast.error("📧 Please verify your email before logging in.");
+  } else {
+    toast.error(error.message);
   }
+}
+
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-[#0b0d12] text-white px-6 relative overflow-hidden">
