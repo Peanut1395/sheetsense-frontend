@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { supabase } from "@/utils/supabaseClient";
+import supabase from "@/utils/supabaseClient";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 

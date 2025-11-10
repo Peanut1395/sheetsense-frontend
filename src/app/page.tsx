@@ -92,20 +92,26 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-10 bg-[#0d1b2a] text-center text-gray-400 text-sm">
-        <p>© {new Date().getFullYear()} SheetSense. All rights reserved.</p>
-        <div className="mt-2 space-x-4">
-          <a href="#" className="hover:text-white">
-            Pricing
-          </a>
-          <a href="#" className="hover:text-white">
-            Contact
-          </a>
-          <a href="#" className="hover:text-white">
-            Privacy
-          </a>
-        </div>
-      </footer>
+<footer className="mt-20 border-t border-gray-800 bg-[#0b0d12] py-8 text-center text-sm text-gray-500">
+  <div className="space-y-2">
+
+    <div className="space-x-4">
+      <a href="/privacy" className="hover:text-blue-400 transition">
+        Privacy Policy
+      </a>
+      <span className="text-gray-600">|</span>
+      <a href="/terms" className="hover:text-blue-400 transition">
+        Terms of Service
+      </a>
+      <span className="text-gray-600">|</span>
+      <a href="/refund" className="hover:text-blue-400 transition">
+        Refund Policy
+      </a>
+    </div>
+  </div>
+</footer>
+
+
     </main>
   );
 }
