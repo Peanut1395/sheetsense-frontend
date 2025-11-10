@@ -11,7 +11,7 @@ export default function TermsPage() {
 
         <div className="space-y-6 leading-relaxed">
           <p>
-            Welcome to <strong>SheetSense</strong> (“we”, “our”, “us”). By
+            Welcome to <strong>SheetSense</strong>. By
             accessing or using our website <strong>https://sheetsense.me</strong> (“Service”),
             you agree to comply with and be bound by these Terms of Service. If
             you do not agree, you must not use the Service.
@@ -73,7 +73,7 @@ export default function TermsPage() {
               href="mailto:support@sheetsense.me"
               className="text-blue-400 hover:underline"
             >
-              support@sheetsense.me
+              singhpranitj07@gmail.com
             </a>
           </p>
         </div>

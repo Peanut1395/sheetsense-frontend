@@ -35,7 +35,7 @@ export default function RefundPage() {
               href="mailto:billing@sheetsense.me"
               className="text-blue-400 hover:underline"
             >
-              billing@sheetsense.me
+              singhpranitj07@gmail.com
             </a>.
           </p>
 
@@ -52,7 +52,7 @@ export default function RefundPage() {
               href="mailto:billing@sheetsense.me"
               className="text-blue-400 hover:underline"
             >
-              billing@sheetsense.me
+              singhpranitj07@gmail.com
             </a>
           </p>
         </div>

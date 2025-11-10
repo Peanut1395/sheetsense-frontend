@@ -55,7 +55,7 @@ export default function PrivacyPage() {
               href="mailto:privacy@sheetsense.me"
               className="text-blue-400 hover:underline"
             >
-              privacy@sheetsense.me
+              singhpranitj07@gmail.com
             </a>.
           </p>
 
