@@ -5,7 +5,6 @@ import supabase from "@/utils/supabaseClient";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
-
 export default function Upload() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -53,6 +52,10 @@ export default function Upload() {
         setPlan(data.plan || "free");
         setUsageCount(data.usage_count || 0);
         setLimit(data.plan === "free" ? 5 : data.plan === "pro" ? 50 : null);
+        setLimitReached(
+          (data.plan === "free" && data.usage_count >= 5) ||
+          (data.plan === "pro" && data.usage_count >= 50)
+        );
       }
     } catch (err) {
       console.error("❌ Failed to fetch usage info:", err);
@@ -105,6 +108,14 @@ export default function Upload() {
     if (error || !user) {
       toast.error("🔒 You need an account to clean your file.");
       setTimeout(() => router.push("/login"), 2500);
+      return;
+    }
+
+    // ⚠️ Frontend pre-check for usage limit
+    if (limit !== null && usageCount >= limit) {
+      setLimitReached(true);
+      setMessage("⚠️ You’ve reached your free limit. Please upgrade to continue.");
+      toast.error("🚫 You’ve reached your free plan limit. Upgrade to continue.");
       return;
     }
 
@@ -166,7 +177,6 @@ export default function Upload() {
       const newUsage = res.headers.get("X-Usage-Count");
       const newLimit = res.headers.get("X-Usage-Limit");
 
-      // Convert file blob
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
@@ -180,7 +190,7 @@ export default function Upload() {
       setDownloadUrl(url);
       setDownloadFilename(filename);
 
-      // Refresh usage info
+      // 🔁 Refresh usage info immediately
       await fetchUserUsage();
 
       const safeUsage =
